@@ -10,7 +10,7 @@ import { UpdateCouponDto } from "./dtos/update-coupon.dto";
 export class CouponService {
     constructor(
         @InjectRepository(Coupon)
-        private repository: Repository<Coupon>
+        private readonly repository: Repository<Coupon>
     ) { }
 
     // Criar coupon

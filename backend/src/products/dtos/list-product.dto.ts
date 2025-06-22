@@ -3,41 +3,57 @@ import { IsBoolean, IsInt, IsOptional, IsString, Max, Min } from "class-validato
 
 export class ListProductDto {
     @Type(() => Number)
-    @IsInt() @Min(1)
+    @IsInt()
+    @Min(1)
     @IsOptional()
     page?: number = 1;
 
     @Type(() => Number)
-    @IsInt() @Min(1) @Max(50)
+    @IsInt()
+    @Min(1)
+    @Max(50)
     @IsOptional()
     limit?: number = 10;
 
-    @IsOptional() @IsString()
+    @IsOptional()
+    @IsString()
     search?: string;
 
     @Type(() => Number)
-    @IsOptional() @Min(0)
+    @IsOptional()
+    @Min(0)
     minPrice?: number;
 
     @Type(() => Number)
-    @IsOptional() @Min(0)
+    @IsOptional()
+    @Min(0)
     maxPrice?: number;
 
     @Type(() => Boolean)
-    @IsOptional() @IsBoolean()
+    @IsOptional()
+    @IsBoolean()
     hasDiscount?: boolean;
 
-    @IsOptional() @IsString()
+    @Type(() => Boolean)
+    @IsOptional()
+    @IsBoolean()
+    includeDeleted?: boolean;  // <— novo campo
+
+    @IsOptional()
+    @IsString()
     sortBy?: 'name' | 'price' | 'created_at' | 'stock';
 
-    @IsOptional() @IsString()
+    @IsOptional()
+    @IsString()
     sortOrder?: 'asc' | 'desc';
 
     @Type(() => Boolean)
-    @IsOptional() @IsBoolean()
+    @IsOptional()
+    @IsBoolean()
     onlyOutOfStock?: boolean;
 
     @Type(() => Boolean)
-    @IsOptional() @IsBoolean()
+    @IsOptional()
+    @IsBoolean()
     withCouponApplied?: boolean;
 }

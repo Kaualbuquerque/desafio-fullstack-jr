@@ -68,7 +68,7 @@ export class ProductCouponApplicationService {
             coupon.uses_count++;
             await manager.save(coupon);
 
-            return { product, coupon, appliedAt: app.applied_at, finalPrice };
+            return { product, coupon, applied_at: app.applied_at, finalPrice };
         });
     }
 
@@ -87,5 +87,14 @@ export class ProductCouponApplicationService {
             // Caso fosse uso único, deixar use_count como está
             return { product: app.product, removedAt: app.removed_at };
         });
+    }
+
+    async findActiveApplication(productId: number) {
+        const app = await this.appRepo.findOne({
+            where: { product: { id: productId }, removed_at: IsNull() },
+            relations: ['coupon'],
+        });
+        if (!app) return null;
+        return { coupon: app.coupon, applied_at: app.applied_at };
     }
 }

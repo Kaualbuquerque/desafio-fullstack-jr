@@ -1,18 +1,21 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnprocessableEntityException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Product } from "./product.entity";
-import { Repository } from "typeorm";
+import { IsNull, Repository } from "typeorm";
 import { CreateProductDto } from "./dtos/create-product.dto";
 import { ListProductDto } from "./dtos/list-product.dto";
 import { UpdateProductDto } from "./dtos/update-product.dto";
 import { applyDiscountUtil, DiscountType } from "src/utils/discount";
 import { ProductCouponApplicationService } from "src/product-coupon-application/product-coupon-application.service";
+import { ProductCouponApplication } from "src/product-coupon-application/product-coupon-application.entity";
 
 @Injectable()
 export class ProductService {
     constructor(
         @InjectRepository(Product)
-        private repository: Repository<Product>,
+        private readonly repository: Repository<Product>,
+        @InjectRepository(ProductCouponApplication)
+        private readonly appRepository: Repository<ProductCouponApplication>,
         private readonly ProductCouponApplicationService: ProductCouponApplicationService,
     ) { }
 
@@ -29,36 +32,120 @@ export class ProductService {
     async list(filters: ListProductDto) {
         const qb = this.repository.createQueryBuilder('p');
 
+        // 1) Incluir ou não os soft-deletados
+        if (filters.includeDeleted) {
+            qb.withDeleted();
+        } else {
+            qb.andWhere('p.deleted_at IS NULL');
+        }
+
+        // 2) Filtro por busca textual
         if (filters.search) {
-            qb.andWhere('(p.name ILIKE :search OR p.description ILIKE :search)', {
-                search: `%${filters.search}%`
-            })
+            qb.andWhere(
+                '(p.name ILIKE :search OR p.description ILIKE :search)',
+                { search: `%${filters.search}%` }
+            );
         }
 
-        if (filters.minPrice != null) qb.andWhere('p.price >= :minPrice', { minPrice: filters.minPrice });
-        if (filters.maxPrice != null) qb.andWhere('p.price <= :maxPrice', { maxPrice: filters.maxPrice });
-        if (filters.onlyOutOfStock) qb.andWhere('p.stock = 0');
-        if (filters.hasDiscount) qb.andWhere('p.price < p.price'); // placeholder para lógica real
-        // TODO: filtro withCouponApplied
+        // 3) Filtros por faixa de preço
+        if (filters.minPrice != null) {
+            qb.andWhere('p.price >= :minPrice', { minPrice: filters.minPrice });
+        }
 
-        // ordenação
+        if (filters.maxPrice != null) {
+            qb.andWhere('p.price <= :maxPrice', { maxPrice: filters.maxPrice });
+        }
+
+        // 4) Filtro por estoque zerado
+        if (filters.onlyOutOfStock) {
+            qb.andWhere('p.stock = 0');
+        }
+
+        // 5) Filtro por cupom aplicado
+        if (filters.hasDiscount || filters.withCouponApplied) {
+            qb.innerJoin(
+                'p.couponApplications',
+                'activeApp',
+                'activeApp.removed_at IS NULL'
+            );
+        }
+
+        // 6) Ordenação
         if (filters.sortBy) {
-            qb.orderBy(`p.${filters.sortBy}`, filters.sortOrder?.toUpperCase() as 'ASC' | 'DESC' || 'ASC');
+            const validSortFields = ['id', 'name', 'price', 'stock', 'created_at', 'updated_at']; // evitar SQL injection
+            if (validSortFields.includes(filters.sortBy)) {
+                qb.orderBy(`p.${filters.sortBy}`, (filters.sortOrder || 'ASC').toUpperCase() as 'ASC' | 'DESC');
+            }
         }
 
-        const page = filters.page || 1;
-        const limit = filters.limit || 10;
-        const [items, total] = await qb
+        // 7) Paginação
+        const page = filters.page ?? 1;
+        const limit = filters.limit ?? 10;
+
+        const [products, total] = await qb
             .skip((page - 1) * limit)
             .take(limit)
             .getManyAndCount();
 
+        // 8) Enriquecer com finalPrice e cupom ativo
+        const data = await Promise.all(products.map(p => this.findOneWithDiscount(p.id)));
+
+        // 9) Retorno final
         return {
-            page,
-            limit,
-            totalItems: total,
-            totalPages: Math.ceil(total / limit),
-            items,
+            data,
+            meta: {
+                page,
+                limit,
+                totalItems: total,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    }
+
+
+    // Retorna produto + preço final + cupom ativo
+    async findOneWithDiscount(id: number): Promise<{
+        product: Product; finalPrice: number; coupon?: { code: string; type: DiscountType; value: number; applied_at: Date };
+    }> {
+        // 1) Busca o produto puro (lança 404 se não existir)
+        const product = await this.repository.findOne({ where: { id } });
+        if (!product) {
+            throw new NotFoundException(`Produto com id ${id} não encontrado.`);
+        }
+
+        // 2) Busca a aplicação ativa de cupom (removedAt IS NULL)
+        const app = await this.appRepository.findOne({
+            where: {
+                product: { id },
+                removed_at: IsNull(),
+            },
+            relations: ['coupon'],
+        });
+
+        // 3) Prepara valores padrão
+        let finalPrice = product.price;
+        let couponInfo: { code: string; type: DiscountType; value: number; applied_at: Date } | undefined;
+
+        // 4) Se há aplicação, calcula finalPrice e monta couponInfo
+        if (app) {
+            const { coupon, applied_at } = app;
+            finalPrice = applyDiscountUtil(product.price, {
+                type: coupon.type as DiscountType,
+                value: coupon.value,
+            });
+            couponInfo = {
+                code: coupon.code,
+                type: coupon.type as DiscountType,
+                value: coupon.value,
+                applied_at,
+            };
+        }
+
+        // 5) Retorna objeto unificado
+        return {
+            product,
+            finalPrice,
+            ...(couponInfo ? { coupon: couponInfo } : {}),
         };
     }
 
@@ -122,8 +209,8 @@ export class ProductService {
     }
 
     // Aplica desconto percentual 
-    async applyDiscount(id: number, type: DiscountType, value: number): 
-    Promise<{product: Product; finalPrice: number; coupon?: { code: string; type: DiscountType; value: number; appliedAt: Date };}> {
+    async applyDiscount(id: number, type: DiscountType, value: number):
+        Promise<{ product: Product; finalPrice: number; coupon?: { code: string; type: DiscountType; value: number; applied_at: Date }; }> {
         const product = await this.repository.findOne({ where: { id } });
         if (!product) throw new NotFoundException('Produto não encontrado.');
 
