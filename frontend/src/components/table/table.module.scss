@@ -1,0 +1,33 @@
+/* StaticProductTable.module.css */
+
+.table {
+    width: 100%;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.headerCell {
+    color: #64748B;
+    border-width: 0 0 2px 0;
+    border-style: solid;
+    border-color: #a3a3a333;
+    font-weight: bold;
+    padding: 1rem;
+    text-align: center;
+}
+
+.bodyCell {
+    max-width: 50px;
+    padding: 1rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; 
+  }
+
+.bodyCellActions {
+    padding: 1rem;
+    text-align: center;
+    gap: 1rem;
+}

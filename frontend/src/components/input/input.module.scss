@@ -1,0 +1,23 @@
+.input {
+    display: flex;
+    flex-direction: column;
+
+    label {
+        font-weight: 600;
+    }
+
+    input[type="number"]{
+        height: 40px;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        padding-left: 1rem;
+    }
+
+    input[type="text"]{
+        height: 40px;
+        width: 100%;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        padding-left: 1rem;
+    }
+}
