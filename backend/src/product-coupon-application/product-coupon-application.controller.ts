@@ -13,6 +13,7 @@ export class ProductCouponApplicationController {
         private readonly service: ProductCouponApplicationService,
     ) { }
 
+    // Aplica um cupom a um produto com base no ID e no código fornecido
     @ApiOperation({ summary: 'Aplicar cupom a um produto' })
     @ApiParam({ name: 'id', type: Number, description: 'ID do produto' })
     @ApiBody({
@@ -27,6 +28,7 @@ export class ProductCouponApplicationController {
         return this.service.applyCoupon(id, dto.code);
     }
 
+    // Remove o cupom aplicado de um produto pelo ID
     @ApiOperation({ summary: 'Remover cupom aplicado de um produto' })
     @ApiParam({ name: 'id', type: Number, description: 'ID do produto' })
     @ApiResponse({ status: 200, description: 'Cupom removido com sucesso' })

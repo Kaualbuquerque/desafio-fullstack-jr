@@ -22,7 +22,7 @@ export class ProductService {
         private readonly ProductCouponApplicationService: ProductCouponApplicationService,
     ) { }
 
-    // Criar Produto
+    // Cria um novo produto com os dados fornecidos
     async create(dto: CreateProductDto): Promise<Product> {
         // nome único após normalização
         dto.name = dto.name.trim().replace(/\s+/g, ' ');
@@ -31,18 +31,18 @@ export class ProductService {
         return this.repository.save(product);
     }
 
-    // Listar Produto
+    // Lista produtos com filtros avançados, paginação e enriquecimento de dados
     async list(filters: ListProductDto) {
         const qb = this.repository.createQueryBuilder('p');
 
-        // 1) Incluir ou não os soft-deletados
+        // Incluir ou não os soft-deletados
         if (filters.includeDeleted) {
             qb.withDeleted();
         } else {
             qb.andWhere('p.deleted_at IS NULL');
         }
 
-        // 2) Filtro por busca textual
+        // Filtro por busca textual
         if (filters.search) {
             qb.andWhere(
                 '(p.name ILIKE :search OR p.description ILIKE :search)',
@@ -50,7 +50,7 @@ export class ProductService {
             );
         }
 
-        // 3) Filtros por faixa de preço
+        // Filtros por faixa de preço
         if (filters.minPrice != null) {
             qb.andWhere('p.price >= :minPrice', { minPrice: filters.minPrice });
         }
@@ -59,12 +59,12 @@ export class ProductService {
             qb.andWhere('p.price <= :maxPrice', { maxPrice: filters.maxPrice });
         }
 
-        // 4) Filtro por estoque zerado
+        // Filtro por estoque zerado
         if (filters.onlyOutOfStock) {
             qb.andWhere('p.stock = 0');
         }
 
-        // 5) Filtro por cupom aplicado
+        // Filtro por cupom aplicado
         if (filters.hasDiscount || filters.withCouponApplied) {
             qb.innerJoin(
                 'p.couponApplications',
@@ -73,7 +73,7 @@ export class ProductService {
             );
         }
 
-        // 6) Ordenação
+        // Ordenação
         if (filters.sortBy) {
             const validSortFields = ['id', 'name', 'price', 'stock', 'created_at', 'updated_at'];
             if (validSortFields.includes(filters.sortBy)) {
@@ -81,7 +81,7 @@ export class ProductService {
             }
         }
 
-        // 7) Paginação
+        // Paginação
         const page = filters.page ?? 1;
         const limit = filters.limit ?? 10;
 
@@ -90,7 +90,7 @@ export class ProductService {
             .take(limit)
             .getManyAndCount();
 
-        // 8) Enriquecer com finalPrice e cupom ativo
+        // Enriquecer com finalPrice e cupom ativo ou desconto direto
         const data = await Promise.all(
             products.map(async (p) => {
                 const app = await this.ProductCouponApplicationService.findActiveApplication(p.id);
@@ -110,6 +110,12 @@ export class ProductService {
                         value: app.coupon.value,
                         applied_at: app.applied_at,
                     };
+                } else if (p.discount_type && p.discount_value) {
+                    // Aplica desconto direto caso não tenha cupom ativo
+                    finalPrice = applyDiscountUtil(p.price, {
+                        type: p.discount_type,
+                        value: p.discount_value,
+                    });
                 }
 
                 return {
@@ -120,7 +126,7 @@ export class ProductService {
             })
         );
 
-        // 9) Retorno final
+        // Retorno final
         return {
             data,
             meta: {
@@ -132,9 +138,7 @@ export class ProductService {
         };
     }
 
-
-
-    // Retorna produto + preço final + cupom ativo
+    // Retorna um produto pelo ID com preço final e informações do cupom ativo (se houver)
     async findOneWithDiscount(productId: number): Promise<{
         product: Product;
         finalPrice: number;
@@ -148,6 +152,18 @@ export class ProductService {
         const product = await this.repository.findOne({ where: { id: productId } });
         if (!product) throw new NotFoundException('Produto não encontrado.');
 
+        // Começa pelo preço original
+        let finalPrice = product.price;
+
+        // Aplica desconto direto, se houver
+        if (product.discount_type && product.discount_value != null) {
+            finalPrice = applyDiscountUtil(finalPrice, {
+                type: product.discount_type,
+                value: Number(product.discount_value),
+            });
+        }
+
+        // Verifica cupom ativo para o produto
         const app = await this.appRepository.findOne({
             where: {
                 product: { id: productId },
@@ -156,32 +172,30 @@ export class ProductService {
             relations: ['coupon'],
         });
 
+        let couponData;
+
         if (app && app.coupon) {
-            const finalPrice = applyDiscountUtil(product.price, {
+            finalPrice = applyDiscountUtil(finalPrice, {
                 type: app.coupon.type,
                 value: app.coupon.value,
             });
 
-            return {
-                product,
-                finalPrice,
-                coupon: {
-                    code: app.coupon.code,
-                    type: app.coupon.type,
-                    value: app.coupon.value,
-                    applied_at: app.applied_at,
-                },
+            couponData = {
+                code: app.coupon.code,
+                type: app.coupon.type,
+                value: app.coupon.value,
+                applied_at: app.applied_at,
             };
         }
 
-        // Caso não tenha cupom, finalPrice = price original
         return {
             product,
-            finalPrice: product.price,
+            finalPrice,
+            coupon: couponData,
         };
     }
 
-    // Buscar produto por id
+    // Busca um produto pelo ID
     async findOne(id: number): Promise<Product> {
         const product = await this.repository.findOne({ where: { id } });
         if (!product) throw new NotFoundException();
@@ -189,7 +203,7 @@ export class ProductService {
         return product;
     }
 
-    // Atualizar produto
+    // Atualiza os dados de um produto existente
     async update(id: number, dto: UpdateProductDto): Promise<Product> {
         const product = await this.repository.findOne({ where: { id } });
 
@@ -224,23 +238,27 @@ export class ProductService {
             product.price = dto.price;
         }
 
+        if (dto.category !== undefined) {
+            product.category = dto.category.trim(); // adiciona a atualização de categoria
+        }
+
         return this.repository.save(product);
     }
 
-    // Inativa produto
+    // Inativa (soft-delete) um produto pelo ID
     async delete(id: number): Promise<void> {
         const product = await this.findOne(id);
         await this.repository.softRemove(product);
     }
 
-    // Restaura produto inativo
+    // Restaura um produto previamente inativado
     async restore(id: number): Promise<Product> {
         const product = await this.repository.findOne({ where: { id }, withDeleted: true });
         if (!product) throw new NotFoundException();
         return this.repository.save(product);
     }
 
-    // Aplica desconto percentual 
+    // Aplica um desconto direto (fixo ou percentual) ao produto e retorna o novo preço final
     async applyDiscount(id: number, type: DiscountType, value: number):
         Promise<{ product: Product; finalPrice: number; coupon?: { code: string; type: DiscountType; value: number; applied_at: Date }; }> {
         const product = await this.repository.findOne({ where: { id } });
@@ -261,11 +279,17 @@ export class ProductService {
                 throw new BadRequestException(msg);
             }
 
+            // Salva desconto direto no produto
+            product.discount_type = type;
+            product.discount_value = value;
+            await this.repository.save(product);
+
             return { product, finalPrice };
         }
         throw new BadRequestException('Tipo de desconto não suportado.');
     }
 
+    // Aplica um cupom existente ao produto, se ainda não aplicado
     async applyCoupon(id: number, code: string) {
         const product = await this.repository.findOne({ where: { id }, relations: ['couponApplications'] });
         if (!product) throw new NotFoundException('Produto não encontrado.');
@@ -301,7 +325,7 @@ export class ProductService {
         };
     }
 
-    // Remove qualquer disconto ativo
+    // Remove qualquer desconto aplicado (cupom ativo) ao produto
     async removeDiscount(id: number): Promise<{ product: Product; removedAt?: Date; }> {
 
         const removed = await this.ProductCouponApplicationService.removeCoupon(id);
@@ -309,4 +333,5 @@ export class ProductService {
         const product = await this.repository.findOne({ where: { id } });
         return { product: product!, removedAt: removed.removedAt };
     }
+
 }

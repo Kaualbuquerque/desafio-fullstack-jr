@@ -31,6 +31,12 @@ export class Product {
     @DeleteDateColumn({ type: 'datetime', nullable: true })
     deleted_at?: Date;
 
+    @Column({ type: 'simple-enum', enum: ['percent', 'fixed'], nullable: true })
+    discount_type?: 'percent' | 'fixed';
+
+    @Column('decimal', { precision: 12, scale: 2, nullable: true })
+    discount_value?: number;
+
     @OneToMany(() => ProductCouponApplication, app => app.product, { cascade: true, eager: false })
     couponApplications: ProductCouponApplication[];
 }

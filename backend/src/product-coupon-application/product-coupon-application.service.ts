@@ -17,6 +17,7 @@ export class ProductCouponApplicationService {
         private readonly couponRepo: Repository<Coupon>,
     ) { }
 
+    // Aplica um cupom a um produto, validando regras e incrementando o uso
     async applyCoupon(productId: number, code: string) {
         return this.dataSource.transaction(async manager => {
             const product = await manager.findOne(Product, { where: { id: productId } });
@@ -72,6 +73,7 @@ export class ProductCouponApplicationService {
         });
     }
 
+    // Remove o cupom aplicado de um produto, marcando como removido (soft delete)
     async removeCoupon(productId: number) {
         return this.dataSource.transaction(async manager => {
             const app = await manager.findOne(ProductCouponApplication, {
@@ -89,6 +91,7 @@ export class ProductCouponApplicationService {
         });
     }
 
+    // Retorna o cupom atualmente aplicado a um produto, se existir
     async findActiveApplication(productId: number) {
         const app = await this.appRepo.findOne({
             where: { product: { id: productId }, removed_at: IsNull() },

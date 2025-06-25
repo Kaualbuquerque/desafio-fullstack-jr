@@ -9,7 +9,7 @@ import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/s
 export class CouponController {
     constructor(private readonly service: CouponService) { }
 
-
+    // Cria um novo cupom com os dados fornecidos
     @ApiOperation({ summary: 'Criar um novo cupom' })
     @ApiBody({ type: CreateCouponDto })
     @ApiResponse({ status: 201, description: 'Cupom criado com sucesso.' })
@@ -19,6 +19,7 @@ export class CouponController {
         return this.service.create(dto);
     }
 
+    // Retorna todos os cupons ativos
     @ApiOperation({ summary: 'Listar todos os cupons ativos' })
     @ApiResponse({ status: 200, description: 'Lista de cupons retornada com sucesso.' })
     @Get()
@@ -26,6 +27,7 @@ export class CouponController {
         return this.service.findAll();
     }
 
+    // Busca um cupom específico pelo seu código
     @ApiOperation({ summary: 'Buscar cupom por código' })
     @ApiParam({ name: 'code', type: String, description: 'Código do cupom' })
     @ApiResponse({ status: 200, description: 'Cupom encontrado.' })
@@ -35,6 +37,7 @@ export class CouponController {
         return this.service.findByCode(code);
     }
 
+    // Atualiza os dados de um cupom existente, exceto o código
     @ApiOperation({ summary: 'Atualizar cupom pelo código (exceto código)' })
     @ApiParam({ name: 'code', type: String, description: 'Código do cupom a ser atualizado' })
     @ApiBody({ type: UpdateCouponDto })
@@ -45,6 +48,7 @@ export class CouponController {
         return this.service.update(code, dto);
     }
 
+    // Inativa (soft delete) um cupom com base no código
     @ApiOperation({ summary: 'Inativar (soft delete) um cupom pelo código' })
     @ApiParam({ name: 'code', type: String, description: 'Código do cupom a ser inativado' })
     @ApiResponse({ status: 204, description: 'Cupom inativado com sucesso.' })
