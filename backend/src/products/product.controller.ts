@@ -11,6 +11,8 @@ import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from 
 export class ProductController {
     constructor(private readonly service: ProductService) { }
 
+
+    // Lista produtos com filtros, ordenação e paginação
     @ApiOperation({ summary: 'Listar produtos com filtros e paginação' })
     @ApiQuery({ name: 'search', required: false, description: 'Busca por nome ou descrição' })
     @ApiQuery({ name: 'minPrice', required: false, type: Number })
@@ -29,6 +31,7 @@ export class ProductController {
         return this.service.list(filters);
     }
 
+    // Busca um produto pelo ID, incluindo preço final e cupom ativo (se houver)
     @ApiOperation({ summary: 'Buscar um produto com preço final e cupom ativo (se houver)' })
     @ApiParam({ name: 'id', type: Number, description: 'ID do produto' })
     @ApiResponse({ status: 200, description: 'Produto encontrado com sucesso' })
@@ -38,6 +41,7 @@ export class ProductController {
         return this.service.findOneWithDiscount(id);
     }
 
+    // Cria um novo produto com os dados informados
     @ApiOperation({ summary: 'Criar novo produto' })
     @ApiBody({ type: CreateProductDto })
     @ApiResponse({ status: 201, description: 'Produto criado com sucesso' })
@@ -46,6 +50,7 @@ export class ProductController {
         return this.service.create(dto);
     }
 
+    // Aplica um cupom a um produto pelo ID
     @ApiOperation({ summary: 'Aplicar cupom ao produto' })
     @ApiParam({ name: 'id', type: Number, description: 'ID do produto' })
     @ApiBody({ schema: { example: { code: "CUPOM10" } } })
@@ -59,6 +64,7 @@ export class ProductController {
         return this.service.applyCoupon(id, code);
     }
 
+    // Aplica um desconto direto (percentual ou fixo) ao produto
     @ApiOperation({ summary: 'Aplicar desconto direto ao produto (percentual ou fixo)' })
     @ApiParam({ name: 'id', type: Number, description: 'ID do produto' })
     @ApiBody({ type: ApplyDiscountDto })
@@ -72,6 +78,7 @@ export class ProductController {
         return this.service.applyDiscount(id, dto.type, dto.value);
     }
 
+    // Atualiza os dados de um produto existente pelo ID
     @ApiOperation({ summary: 'Atualizar um produto' })
     @ApiParam({ name: 'id', type: Number, description: 'ID do produto' })
     @ApiBody({ type: UpdateProductDto })
@@ -82,6 +89,7 @@ export class ProductController {
         return this.service.update(id, dto);
     }
 
+    // Inativa (soft-delete) um produto pelo ID
     @ApiOperation({ summary: 'Inativar (soft-delete) um produto' })
     @ApiParam({ name: 'id', type: Number, description: 'ID do produto' })
     @ApiResponse({ status: 204, description: 'Produto inativado com sucesso' })
@@ -91,6 +99,7 @@ export class ProductController {
         return this.service.delete(id);
     }
 
+    // Restaura um produto previamente inativado
     @ApiOperation({ summary: 'Restaurar um produto inativo' })
     @ApiParam({ name: 'id', type: Number, description: 'ID do produto' })
     @ApiResponse({ status: 200, description: 'Produto restaurado com sucesso' })
@@ -99,6 +108,7 @@ export class ProductController {
         return this.service.restore(id);
     }
 
+    // Remove o desconto aplicado a um produto (direto ou via cupom)
     @ApiOperation({ summary: 'Remover o desconto aplicado ao produto' })
     @ApiParam({ name: 'id', type: Number, description: 'ID do produto' })
     @ApiResponse({ status: 204, description: 'Desconto removido com sucesso' })

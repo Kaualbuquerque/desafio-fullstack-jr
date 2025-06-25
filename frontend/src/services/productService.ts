@@ -14,10 +14,10 @@ export interface Product {
 
 interface ApiResponseProduct {
   product: Product;
-  finalPrice?: number; // se precisar desse campo
+  finalPrice?: number;
 }
 
-// GET all products (com filtros opcionais)
+// Busca todos os produtos, com suporte a filtros opcionais (nome, preço, desconto)
 export const getProducts = async (params?: {
   name?: string;
   minPrice?: number;
@@ -28,32 +28,32 @@ export const getProducts = async (params?: {
   return response.data;
 };
 
-// GET por ID
+// Busca um produto pelo ID, incluindo preço final (se houver desconto)
 export async function getProductById(id: number): Promise<ApiResponseProduct> {
   const response = await api.get(`/products/${id}`);
-  return response.data; // que tem o formato { product: {...}, finalPrice: ... }
+  return response.data;
 }
 
-// POST create product
+// Cria um novo produto com os dados fornecidos
 export const createProduct = async (product: Product) => {
   const response = await api.post('/products', product);
   return response.data;
 };
 
-// PUT (atualizar produto)
+// Atualiza um produto existente pelo ID
 export const updateProduct = async (id: number, updatedProduct: Product): Promise<Product> => {
   const response = await api.patch(`/products/${id}`, updatedProduct);
   return response.data;
 };
 
-// DELETE product
+// Inativa (soft-delete) um produto pelo ID
 export const deleteProduct = async (productId: number) => {
   const response = await api.delete(`/products/${productId}`);
   return response.data;
 };
 
 
-// PATCH apply coupon to a product
+// Aplica um cupom a um produto
 export const applyCoupon = async (productId: number, couponCode: string) => {
   const response = await api.patch(`/products/${productId}/apply-coupon`, {
     couponCode,
@@ -61,7 +61,7 @@ export const applyCoupon = async (productId: number, couponCode: string) => {
   return response.data;
 };
 
-// PATCH remove discount
+// Remove o desconto aplicado de um produto
 export const removeDiscount = async (productId: number) => {
   const response = await api.patch(`/products/${productId}/remove-discount`);
   return response.data;

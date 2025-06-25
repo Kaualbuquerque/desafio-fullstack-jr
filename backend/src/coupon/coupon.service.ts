@@ -13,7 +13,7 @@ export class CouponService {
         private readonly repository: Repository<Coupon>
     ) { }
 
-    // Criar coupon
+    // Cria um novo cupom após validar código e datas
     async create(dto: CreateCouponDto): Promise<Coupon> {
         const normalizedCode = normalizeCode(dto.code);
 
@@ -46,12 +46,12 @@ export class CouponService {
         return this.repository.save(coupon);
     }
 
-    // Lista os coupons ativos
+    // Retorna todos os cupons que não foram deletados
     async findAll(): Promise<Coupon[]> {
         return this.repository.find({ where: { deleted_at: IsNull() } })
     }
 
-    // Busca coupon pelo código
+    // Busca um cupom pelo código, validando se existe e não foi deletado
     async findByCode(code: string): Promise<Coupon> {
         const normalized = normalizeCode(code);
         const coupon = await this.repository.findOne({ where: { code: normalized } });
@@ -63,7 +63,7 @@ export class CouponService {
         return coupon;
     }
 
-    // Atualiza o coupon, exceto o código
+    // Atualiza os dados de um cupom existente, exceto o código
     async update(code: string, dto: UpdateCouponDto): Promise<Coupon> {
         const normalized = normalizeCode(code);
         const coupon = await this.repository.findOne({ where: { code: normalized } })
@@ -76,7 +76,7 @@ export class CouponService {
         return this.repository.save(coupon);
     }
 
-    // Inativa coupon
+    // Inativa (soft delete) um cupom pelo código
     async softDelete(code: string): Promise<void> {
         const normalized = normalizeCode(code);
         const coupon = await this.repository.findOne({ where: { code: normalized } })

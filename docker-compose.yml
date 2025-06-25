@@ -1,20 +1,35 @@
-version: '3.8'
-
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
-      - "3001:3001"  # Porta externa:interna
+      - "4000:4000"
+    # Removido o bind mount da pasta do backend para não sobrescrever node_modules
+    # Mantemos volume para node_modules para persistir pacotes instalados no container
+    volumes:
+      - /app/node_modules
     environment:
       - NODE_ENV=production
-    # command já está definido no Dockerfile, então não é obrigatório aqui
+    networks:
+      - app-network
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    # Removido bind mount da pasta frontend para o mesmo motivo do backend
     volumes:
-      - ./frontend:/app
       - /app/node_modules
+    environment:
+      - NODE_ENV=production
     depends_on:
       - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

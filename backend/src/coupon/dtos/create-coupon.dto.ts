@@ -15,7 +15,6 @@ export class CreateCouponDto {
     @ValidateIf(o => o.type === 'percent')
     @Min(1)
     @Max(80)
-    // value: number; 
 
     @ValidateIf(o => o.type === 'fixed')
     @Min(0.01)

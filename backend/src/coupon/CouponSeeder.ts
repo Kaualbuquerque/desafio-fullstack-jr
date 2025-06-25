@@ -14,8 +14,8 @@ export class CouponSeeder implements OnModuleInit {
         const count = await this.repository.count();
         if (count === 0) {
             const now = new Date();
-            const validFrom = new Date(now.getTime() - 1000 * 60 * 60 * 24); // ontem
-            const validUntil = new Date(now.getTime() + 1000 * 60 * 60 * 24 * 30); // 30 dias depois
+            const validFrom = new Date(now.getTime() - 1000 * 60 * 60 * 24);
+            const validUntil = new Date(now.getTime() + 1000 * 60 * 60 * 24 * 30);
 
             const coupons: DeepPartial<Coupon>[] = [
                 { code: 'save10', type: 'percent', value: 10, one_shot: false, valid_from: validFrom, valid_until: validUntil, uses_count: 0 },
@@ -24,6 +24,8 @@ export class CouponSeeder implements OnModuleInit {
                 { code: 'save25', type: 'percent', value: 25, one_shot: false, valid_from: validFrom, valid_until: validUntil, uses_count: 0 },
                 { code: 'save30', type: 'percent', value: 30, one_shot: false, valid_from: validFrom, valid_until: validUntil, uses_count: 0 },
                 { code: 'save35', type: 'percent', value: 35, one_shot: false, valid_from: validFrom, valid_until: validUntil, uses_count: 0 },
+                { code: 'save40', type: 'percent', value: 40, one_shot: false, valid_from: validFrom, valid_until: validUntil, uses_count: 0 },
+                { code: 'save50', type: 'percent', value: 50, one_shot: false, valid_from: validFrom, valid_until: validUntil, uses_count: 0 },
             ];
 
             for (const c of coupons) {

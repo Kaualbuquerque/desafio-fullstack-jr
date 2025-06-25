@@ -30,4 +30,8 @@ export class CreateProductDto {
     @Min(0.01)
     @Max(1000000)
     price: number;
+
+    @IsString()
+    @Length(3, 100)
+    category: string;
 }
