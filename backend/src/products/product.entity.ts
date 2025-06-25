@@ -19,6 +19,9 @@ export class Product {
     @Column('int', { default: 0 })
     stock: number;
 
+    @Column({ length: 100 })
+    category: string;
+
     @CreateDateColumn({ type: 'datetime' })
     created_at: Date;
 

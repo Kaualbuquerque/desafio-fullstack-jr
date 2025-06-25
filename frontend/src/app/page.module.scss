@@ -1,7 +1,7 @@
 .page {
     display: grid;
     grid-template-columns: repeat(10, 1fr);
-    grid-template-rows: repeat(5, 1fr);
+    grid-template-rows: repeat(6, 1fr);
 }
 
 .title {
@@ -23,25 +23,29 @@
 .filters {
     grid-column: 1/5;
     display: flex;
-    align-items: end;
+    align-items: flex-end;
     gap: 1rem;
 }
 
 .newProduct {
     grid-column: 6/10;
     display: flex;
-    align-items: end;
+    align-items: flex-end;
     gap: 2rem;
 }
 
-.newProduct > :nth-child(1){
+.newProduct> :nth-child(1) {
     width: 60%;
 }
-.newProduct > :nth-child(2){
+
+.newProduct> :nth-child(2) {
     width: 40%;
 }
 
-.table{
+.table {
+    padding-top: 1rem;
     grid-column: 1/11;
-    grid-row: 3;
+    grid-row: 3/11;
+    max-height: 400px; // você define a altura limite
+    overflow-y: auto;
 }

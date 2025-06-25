@@ -1,0 +1,70 @@
+.productForm {
+    background-color: #fff;
+    padding: 1rem 2rem;
+    border-radius: 10px;
+    border: 2px solid #F1F5F9;
+}
+
+.title {
+    font-size: .75rem;
+
+    span {
+        font-size: .6rem;
+        color: #3e424dcc;
+        font-style: italic;
+    }
+}
+
+.formInputs {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: .5rem;
+}
+
+.nameCategoryInput {
+    grid-column: 1/11;
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 2rem;
+
+    :nth-child(1) {
+        grid-column: 1/6;
+    }
+
+    :nth-child(2) {
+        grid-column: 6/11;
+    }
+}
+
+.descriptionInput {
+    grid-column: 1/11;
+    grid-row: 2;
+}
+
+.descriptionInput:nth-child(2) {
+    grid-row: 2/5;
+}
+
+.priceStockInput {
+    grid-column: 1/11;
+    grid-row: 5;
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 2rem;
+
+    :nth-child(1) {
+        grid-column: 1/6;
+    }
+
+    :nth-child(2) {
+        grid-column: 6/11;
+    }
+}
+
+.formButton {
+    grid-column: 10;
+    grid-row: 7;
+    display: flex;
+    gap: 1rem;
+}

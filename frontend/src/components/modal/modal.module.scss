@@ -1,0 +1,108 @@
+// components/modal/modal.module.scss
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.modal {
+    background: white;
+    padding: 2rem;
+    width: min-content;
+    width: 500px;
+    height: 500px;
+    border-radius: 8px;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+}
+
+.title {
+    grid-column: 1/5;
+    grid-row: 1;
+
+    p {
+        font-size: .75rem;
+        color: #555555c2;
+        margin-top: -20px;
+    }
+
+    h2 {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+}
+
+.couponType {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    grid-column: 1/6;
+    grid-row: 2;
+
+    :nth-child(1) {
+        width: 100%;
+        gap: .5rem;
+
+        img {
+            width: min-content;
+        }
+    }
+
+    :nth-child(2) {
+        width: 100%;
+
+        img {
+            width: min-content;
+        }
+    }
+}
+
+.coupon {
+    grid-row: 3;
+    grid-column: 1/6;
+}
+
+.savedCoupons {
+    grid-column: 1/6;
+    grid-row: 4;
+
+    p {
+        font-size: .75rem;
+        color: #555555c2;
+    }
+}
+
+.coupons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: .5rem;
+}
+
+.percent {
+    grid-column: 1/ 6;
+    grid-row: 3;
+
+    p {
+        font-size: .75rem;
+        color: #555555c2;
+    }
+}
+
+.buttons {
+    display: flex;
+    grid-row: 6;
+    grid-column: 1/6;
+    justify-content: flex-end;
+    gap: 1rem;
+}

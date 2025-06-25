@@ -5,9 +5,10 @@ import { IsNull, Repository } from "typeorm";
 import { CreateProductDto } from "./dtos/create-product.dto";
 import { ListProductDto } from "./dtos/list-product.dto";
 import { UpdateProductDto } from "./dtos/update-product.dto";
-import { applyDiscountUtil, DiscountType } from "src/utils/discount";
+import { AppliedCouponInfo, applyDiscountUtil, DiscountType } from "src/utils/discount";
 import { ProductCouponApplicationService } from "src/product-coupon-application/product-coupon-application.service";
 import { ProductCouponApplication } from "src/product-coupon-application/product-coupon-application.entity";
+import { Coupon } from "src/coupon/coupon.entity";
 
 @Injectable()
 export class ProductService {
@@ -16,6 +17,8 @@ export class ProductService {
         private readonly repository: Repository<Product>,
         @InjectRepository(ProductCouponApplication)
         private readonly appRepository: Repository<ProductCouponApplication>,
+        @InjectRepository(Coupon)
+        private readonly couponRepository: Repository<Coupon>,
         private readonly ProductCouponApplicationService: ProductCouponApplicationService,
     ) { }
 
@@ -72,7 +75,7 @@ export class ProductService {
 
         // 6) Ordenação
         if (filters.sortBy) {
-            const validSortFields = ['id', 'name', 'price', 'stock', 'created_at', 'updated_at']; // evitar SQL injection
+            const validSortFields = ['id', 'name', 'price', 'stock', 'created_at', 'updated_at'];
             if (validSortFields.includes(filters.sortBy)) {
                 qb.orderBy(`p.${filters.sortBy}`, (filters.sortOrder || 'ASC').toUpperCase() as 'ASC' | 'DESC');
             }
@@ -88,7 +91,34 @@ export class ProductService {
             .getManyAndCount();
 
         // 8) Enriquecer com finalPrice e cupom ativo
-        const data = await Promise.all(products.map(p => this.findOneWithDiscount(p.id)));
+        const data = await Promise.all(
+            products.map(async (p) => {
+                const app = await this.ProductCouponApplicationService.findActiveApplication(p.id);
+
+                let finalPrice = p.price;
+                let coupon: AppliedCouponInfo | undefined;
+
+                if (app) {
+                    finalPrice = applyDiscountUtil(p.price, {
+                        type: app.coupon.type,
+                        value: app.coupon.value,
+                    });
+
+                    coupon = {
+                        code: app.coupon.code,
+                        type: app.coupon.type,
+                        value: app.coupon.value,
+                        applied_at: app.applied_at,
+                    };
+                }
+
+                return {
+                    product: p,
+                    finalPrice,
+                    coupon,
+                };
+            })
+        );
 
         // 9) Retorno final
         return {
@@ -103,49 +133,51 @@ export class ProductService {
     }
 
 
-    // Retorna produto + preço final + cupom ativo
-    async findOneWithDiscount(id: number): Promise<{
-        product: Product; finalPrice: number; coupon?: { code: string; type: DiscountType; value: number; applied_at: Date };
-    }> {
-        // 1) Busca o produto puro (lança 404 se não existir)
-        const product = await this.repository.findOne({ where: { id } });
-        if (!product) {
-            throw new NotFoundException(`Produto com id ${id} não encontrado.`);
-        }
 
-        // 2) Busca a aplicação ativa de cupom (removedAt IS NULL)
+    // Retorna produto + preço final + cupom ativo
+    async findOneWithDiscount(productId: number): Promise<{
+        product: Product;
+        finalPrice: number;
+        coupon?: {
+            code: string;
+            type: DiscountType;
+            value: number;
+            applied_at: Date;
+        };
+    }> {
+        const product = await this.repository.findOne({ where: { id: productId } });
+        if (!product) throw new NotFoundException('Produto não encontrado.');
+
         const app = await this.appRepository.findOne({
             where: {
-                product: { id },
+                product: { id: productId },
                 removed_at: IsNull(),
             },
             relations: ['coupon'],
         });
 
-        // 3) Prepara valores padrão
-        let finalPrice = product.price;
-        let couponInfo: { code: string; type: DiscountType; value: number; applied_at: Date } | undefined;
-
-        // 4) Se há aplicação, calcula finalPrice e monta couponInfo
-        if (app) {
-            const { coupon, applied_at } = app;
-            finalPrice = applyDiscountUtil(product.price, {
-                type: coupon.type as DiscountType,
-                value: coupon.value,
+        if (app && app.coupon) {
+            const finalPrice = applyDiscountUtil(product.price, {
+                type: app.coupon.type,
+                value: app.coupon.value,
             });
-            couponInfo = {
-                code: coupon.code,
-                type: coupon.type as DiscountType,
-                value: coupon.value,
-                applied_at,
+
+            return {
+                product,
+                finalPrice,
+                coupon: {
+                    code: app.coupon.code,
+                    type: app.coupon.type,
+                    value: app.coupon.value,
+                    applied_at: app.applied_at,
+                },
             };
         }
 
-        // 5) Retorna objeto unificado
+        // Caso não tenha cupom, finalPrice = price original
         return {
             product,
-            finalPrice,
-            ...(couponInfo ? { coupon: couponInfo } : {}),
+            finalPrice: product.price,
         };
     }
 
@@ -232,6 +264,41 @@ export class ProductService {
             return { product, finalPrice };
         }
         throw new BadRequestException('Tipo de desconto não suportado.');
+    }
+
+    async applyCoupon(id: number, code: string) {
+        const product = await this.repository.findOne({ where: { id }, relations: ['couponApplications'] });
+        if (!product) throw new NotFoundException('Produto não encontrado.');
+
+        const coupon = await this.couponRepository.findOne({ where: { code } });
+        if (!coupon) throw new NotFoundException('Cupom não encontrado.');
+
+        const alreadyApplied = await this.appRepository.findOne({
+            where: { product: { id }, coupon: { id: coupon.id } }
+        });
+
+        if (alreadyApplied) {
+            throw new ConflictException('Cupom já aplicado a este produto.');
+        }
+
+        const finalPrice = applyDiscountUtil(product.price, { type: coupon.type, value: coupon.value });
+
+        await this.appRepository.save({
+            product,
+            coupon,
+            applied_at: new Date(),
+        });
+
+        return {
+            product,
+            finalPrice,
+            coupon: {
+                code: coupon.code,
+                type: coupon.type,
+                value: coupon.value,
+                applied_at: new Date(),
+            }
+        };
     }
 
     // Remove qualquer disconto ativo

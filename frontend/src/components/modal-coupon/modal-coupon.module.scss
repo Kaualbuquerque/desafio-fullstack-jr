@@ -1,0 +1,18 @@
+.modalCoupon {
+    color: #0F172A;
+    text-align: center;
+    padding: .5rem .75rem;
+    border: 2px solid #E2E8F0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: .1s ease-in-out;
+    
+    span {
+        font-size: .8rem;
+    }
+}
+
+.modalCoupon:hover {
+    background-color: #0F172A;
+    color: #fff;
+}
