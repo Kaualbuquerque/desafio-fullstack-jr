@@ -1,103 +1,124 @@
+'use client';
+
 import Image from "next/image";
+import produtos from "../../public/shopping-bag.png"
+import refresh from "../../public/refresh-cw.png"
+
+import styles from "./page.module.scss"
+import Input from "@/components/input/input";
+import Button from "@/components/button/button";
+import Table from "@/components/table/table";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Product} from "@/services/productService";
+import { api } from "@/services/api";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [isFiltering, setIsFiltering] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+
+  const clearFilters = () => {
+    setMinPrice("");
+    setMaxPrice("");
+    setSearchTerm("");
+    setProducts(allProducts);
+    setIsFiltering(false);
+  };
+
+  const handleCreateFunction = () => {
+    router.push('/product/create')
+  }
+
+  const handleUpdateFunction = (id: number) => {
+    router.push(`/product/update/${id}`)
+  }
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const response = await api.get('/products');
+        const extractedProducts = response.data.data.map((item: any) => ({
+          ...item.product,
+          discountPrice: item.finalPrice,
+        }));
+
+        setAllProducts(extractedProducts);
+        setProducts(extractedProducts);
+      } catch (error) {
+        console.error("Erro ao buscar produtos:", error);
+      }
+    }
+
+    fetchProducts();
+  }, []);
+
+  const handleDeleteProduct = async (id: number) => {
+    try {
+      await api.delete(`/products/${id}`);
+      setProducts((prev) => prev.filter((p) => p.id !== id)); // remove da UI
+      alert("Produto deletado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao deletar produto:", error);
+      alert("Erro ao deletar produto.");
+    }
+  };
+
+  const handleFilter = () => {
+    let filtered = [...allProducts];
+
+    if (searchTerm) {
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (minPrice) {
+      filtered = filtered.filter(product =>
+        (product.discountPrice ?? product.price) >= parseFloat(minPrice)
+      );
+    }
+
+    if (maxPrice) {
+      filtered = filtered.filter(product =>
+        (product.discountPrice ?? product.price) <= parseFloat(maxPrice)
+      );
+    }
+
+    setProducts(filtered);
+    setIsFiltering(true);
+  };
+
+  return (
+    <div className={styles.page}>
+      <div>
+        <h1 className={styles.title}> <Image src={produtos} alt="icone de produtos" width={produtos.width} height={produtos.height} />Produtos</h1>
+      </div>
+      <div className={styles.inputs}>
+        <div className={styles.filters}>
+          <Input type="number" name="minPrice" label="Preço mínimo" placeholder="R$ 0,00" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} />
+          <Input type="number" name="maxPrice" label="Preço máximo" placeholder="R$ 999,99" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
+          {isFiltering ? (
+            <Button title="Limpar filtros" variant="clearFilters" handleFunction={clearFilters} icon={refresh}/>
+          ) : (
+            <Button title="Filtrar" variant="primary" handleFunction={handleFilter} />
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className={styles.newProduct}>
+          <Input type="text" name="searchProduct" placeholder="Buscar produto..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <Button title="+ Criar produto" variant="primary" handleFunction={handleCreateFunction} />
+        </div>
+      </div>
+
+      <div className={styles.table}>
+        <Table products={products} onDelete={handleDeleteProduct} onUpdate={handleUpdateFunction} />
+      </div>
     </div>
   );
 }

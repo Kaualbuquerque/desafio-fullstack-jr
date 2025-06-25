@@ -1,0 +1,32 @@
+.button{
+    button{
+        width: 100%;
+        height: 40px;
+        border: none;
+        border-radius: 10px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1rem;
+        min-width: max-content;
+    }    
+}
+
+.primary button{
+    background-color: #0F172A;
+    color: #fff;
+}
+
+.secondary button{
+    border: 2px solid #F1F5F9;
+    color: #0F172A;
+}
+
+.clearFilters button{
+    border: 2px solid #F1F5F9;
+    color: #64748B;
+    background-color: #fff;
+    gap: 1rem;
+}

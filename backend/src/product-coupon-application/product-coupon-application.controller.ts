@@ -23,10 +23,7 @@ export class ProductCouponApplicationController {
     @ApiResponse({ status: 404, description: 'Produto ou cupom não encontrado' })
     @ApiResponse({ status: 409, description: 'Cupom já utilizado ou já aplicado ao produto' })
     @Post()
-    apply(
-        @Param('id', ParseIntPipe) id: number,
-        @Body() dto: ApplyCouponDto,
-    ) {
+    apply(@Param('id', ParseIntPipe) id: number, @Body() dto: ApplyCouponDto) {
         return this.service.applyCoupon(id, dto.code);
     }
 

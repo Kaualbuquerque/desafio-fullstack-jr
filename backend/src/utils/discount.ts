@@ -7,6 +7,14 @@ export interface DiscountOptions {
   value: number;
 }
 
+export interface AppliedCouponInfo {
+  code: string;
+  type: 'percent' | 'fixed';
+  value: number;
+  applied_at: Date;
+}
+
+
 export function applyDiscountUtil(originalPrice: number, options: DiscountOptions): number {
   const { type, value } = options;
 

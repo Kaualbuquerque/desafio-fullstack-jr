@@ -1,0 +1,25 @@
+.header {
+    position: fixed;
+    top: 0;
+    left: 12.5%;
+    width: 87.5%;
+    height: 68px;
+    background-color: #fff;
+    border: 2px solid #F1F5F9;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    z-index: 100;
+
+    p {
+        padding-right: 1rem;
+    }
+}
+
+.circle {
+    background-color: #E2E8F0;
+    width: min-content;
+    border-radius: 100%;
+    padding: 1rem;
+}

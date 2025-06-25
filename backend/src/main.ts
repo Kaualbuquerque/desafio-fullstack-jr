@@ -5,6 +5,12 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // ✅ Habilita CORS para o frontend
+  app.enableCors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+  });
+
   const config = new DocumentBuilder()
     .setTitle('Catálogo de Produtos')
     .setDescription('API de gerenciamento de produtos com cupons e descontos')
@@ -13,8 +19,8 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document); // http://localhost:3000/api
+  SwaggerModule.setup('api', app, document); // http://localhost:4000/api
 
-  await app.listen(3000);
+  await app.listen(4000);
 }
 bootstrap();

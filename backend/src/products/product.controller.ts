@@ -3,8 +3,6 @@ import { ProductService } from './product.service';
 import { CreateProductDto } from './dtos/create-product.dto';
 import { ListProductDto } from './dtos/list-product.dto';
 import { UpdateProductDto } from './dtos/update-product.dto';
-import { IsNumber, Min } from 'class-validator';
-import { CreateCouponDto } from 'src/coupon/dtos/create-coupon.dto';
 import { ApplyDiscountDto } from 'src/product-coupon-application/dtos/apply-discount.dto';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
@@ -48,13 +46,26 @@ export class ProductController {
         return this.service.create(dto);
     }
 
+    @ApiOperation({ summary: 'Aplicar cupom ao produto' })
+    @ApiParam({ name: 'id', type: Number, description: 'ID do produto' })
+    @ApiBody({ schema: { example: { code: "CUPOM10" } } })
+    @ApiResponse({ status: 200, description: 'Cupom aplicado com sucesso' })
+    @Post(':id/apply-coupon')
+    @HttpCode(HttpStatus.OK)
+    applyCoupon(
+        @Param('id', ParseIntPipe) id: number,
+        @Body('code') code: string,
+    ) {
+        return this.service.applyCoupon(id, code);
+    }
+
     @ApiOperation({ summary: 'Aplicar desconto direto ao produto (percentual ou fixo)' })
     @ApiParam({ name: 'id', type: Number, description: 'ID do produto' })
     @ApiBody({ type: ApplyDiscountDto })
     @ApiResponse({ status: 200, description: 'Desconto aplicado com sucesso' })
     @Post(':id/discount')
     @HttpCode(HttpStatus.OK)
-    applyPercentDiscount(
+    applyDirectDiscount(
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: ApplyDiscountDto,
     ) {
